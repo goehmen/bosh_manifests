@@ -1,0 +1,277 @@
+---
+name: bosh-pm-acceptance
+director_uuid: 13f4315d-7347-4f0b-8806-d1e96b74ac30
+release:
+  name: bosh
+  version: latest
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.10.0.0/24
+    gateway: 10.10.0.1
+    static:
+    - 10.10.0.7 - 10.10.0.9
+    reserved:
+    - 10.10.0.2 - 10.10.0.6
+    - 10.10.0.10
+    - 10.10.0.100 - 10.10.0.200
+    dns:
+    - 10.10.0.6
+    cloud_properties:
+      subnet: subnet-d597b993
+- name: vip_network
+  type: vip
+  subnets:
+  - range: 127.0.99.0/24
+    gateway: 127.0.99.1
+    dns:
+    - 127.0.99.250
+  cloud_properties:
+    security_groups:
+    - bosh
+resource_pools:
+- name: default
+  stemcell:
+    name: bosh-aws-xen-ubuntu-lucid-go_agent
+    version: latest
+  network: default
+  size: 1
+  cloud_properties:
+    instance_type: m1.small
+    availability_zone: us-east-1c
+compilation:
+  reuse_compilation_vms: true
+  workers: 8
+  network: default
+  cloud_properties:
+    instance_type: c1.medium
+    availability_zone: us-east-1c
+update:
+  canaries: 1
+  canary_watch_time: 30000 - 90000
+  update_watch_time: 30000 - 90000
+  max_in_flight: 1
+  max_errors: 1
+jobs:
+- name: bosh
+  templates:
+  - name: nats
+    release: bosh
+  - name: blobstore
+    release: bosh
+  - name: redis
+    release: bosh
+  - name: powerdns
+    release: bosh
+  - name: director
+    release: bosh
+  - name: registry
+    release: bosh
+  - name: health_monitor
+    release: bosh
+  - name: postgres
+    release: bosh
+  instances: 1
+  resource_pool: default
+  persistent_disk: 20480
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.10.0.7
+  - name: vip_network
+    static_ips:
+    - 54.84.151.64
+properties:
+  template_only:
+    aws:
+      availability_zone: us-east-1c
+  ntp:
+  - 1.north-america.pool.ntp.org
+  - 2.north-america.pool.ntp.org
+  - 3.north-america.pool.ntp.org
+#  blobstore:
+#    provider: s3
+#    bucket_name: bosh-pm-cf-app-com-bosh-blobstore
+#    access_key_id: AKIAJHISGX6GWNJ4THWA
+#    secret_access_key: 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
+  blobstore:
+    address: 10.10.0.7
+    port: 25251
+    backend_port: 25552
+    agent:
+      user: agent
+      password: ldsjlkadsfjlj
+    director:
+      user: director
+      password: DirectoR
+  networks:
+    apps: default
+    management: default
+  nats:
+    user: nats
+    password: 0b450ada9f830085e2cdeff6
+    address: 10.10.0.7
+    port: 4222
+
+  #mysql: &bosh_db
+  #  adapter: mysql2
+  #  user: uaf0815bd799309
+  #  password: pbd323259abfef5c754ea3fd802b9be66
+  #  host: bosh.czc189duncjj.us-east-1.rds.amazonaws.com
+  #  port: 3306
+  #  database: bosh
+
+  postgres: &bosh_db
+    user: bosh
+    password: bosh-password
+    host: 10.10.0.7
+    port: 5432
+    database: bosh
+
+  redis:
+    address: 127.0.0.1
+    port: 25255
+    password: R3d!S
+  director:
+    name: vpc-bosh-bosh-pm
+    address: 10.10.0.7
+    port: 25555
+    encryption: false
+    enable_snapshots: true
+    db: *bosh_db
+    ssl:
+      key: ! '-----BEGIN RSA PRIVATE KEY-----
+
+        MIIEpQIBAAKCAQEAntAIaxjIBQDgX2rJbXbJdercalgsADo+EIWgXPRXmFiarKhA
+
+        C8sZaa1XgTuopEkZlmkGFEGK5D/En0XdQ8sWCbubee+k7tqMMpPC96DHJdSgRJaX
+
+        9BiciouGsMOfeNJTUYTmuXcXKyEvGtY4BT8fKPf6cNhoE66dLZUbVUhePOYcalq3
+
+        VUVdBeEKM8FRw5M/3UML1rPyzX01LzRmyW3Id/HkoWOV3CQjUf7dAhZcY+nquejh
+
+        8eQaiy6onhM3uViW9LBz9PQGhtvp4GCU6xTBhte5RDYdcj7+nZtMgMyqh/3vmC7g
+
+        0Wt7aaVAkACE1iJALjChBZPzCH8tYKW8z2KZPQIDAQABAoIBAQCetLzE8gXpYh/X
+
+        muritoPLkEJnD+gg7hNaBX/lhNUIzPr9skIWxweFYRICdvEoBFlKw3esxHcddFB0
+
+        7qeY+Rnz7gUIzSDhBYx3esyrFIQP3TWwdWIzMGk31wlqGoSChIV5ALxl+Yowsr/V
+
+        LODc9WCZW39uSAVyLdyrUcf36RMr/SLFXPFtli7Fi8bjyKAmaL2daDhPZb8p7gUN
+
+        Jj3JvmaSevEIL1KnPkgfWMVinsqnIwmNbV2FjL+o9nEraQiVR84Lu+8A4tqEy7FY
+
+        jFH/BhnlicPWnl97f2H8ecQcKIP9Dlli/kXd2UaLdDYZICWNm0Wb86o3OfwDBIjo
+
+        VNLJOU1tAoGBAMpE/3Fa+l7eej0QHCvwCpUkfIwwzU+t5SizsXDwkilbDe+U1muH
+
+        7ml8sqzVDkIV2zMoZlTuuB5hM/sS8M7fdZ72LIaI58rw3Wpod2rAMRbZZ5pNxQh+
+
+        r/IRU6x9bp9WwnlRq7q1YjxOUZIWJfyzO51ZJ3hcSNAm+C4lsEM+vhhvAoGBAMj/
+
+        0kEr9LlOG8EZD9rQ5lVuTSeMfE+z58bkp1QEsMuae4n/cZvctrgiYj4l/L4fpTsp
+
+        JhqJBzLGcNtC9hVpjraD+l2UERj/iQOX3N2OrVShWG2bRI5fFT6a1FEPLmcLFrep
+
+        Jw7H/vz9feoEhJQFJNAPaLCKObe3hmU0OJy5gEcTAoGBAL0aatM4onEFgLUMFbqC
+
+        TfKHzSVoDtsake9OqGsVjyC47zt5JEoeKKhYm9d3zT+9nVSjxaBMGrjUWbu3Romy
+
+        Yw39yzzwS/zw2aC9EEAudPaOxQx+/uHlR2uCBX9zOXQgseqoj2wcXj5RXnO830D0
+
+        9Jw0GPGvHaf1dvv14mfMBf9jAoGADFgx2JDTieHzMGvSnnTAALUyheBJ7jc1X/DB
+
+        GhbjqM2HEtWea50ll6986yY4HJEi+7wuO+j4iTTIz56QMIZ4HluCr+adGjTvfEoC
+
+        ZZUSriTuomSr1DagvmSR75yIFAoJTiRUYsMDtRP4fLvkTJb4SNL5cgY7Pz5FQcfw
+
+        RifaagMCgYEAq1+w9ceV3jWNeaZe02GTgEnQXdT4i/4UVduwn4DkrCpaOScUsMuo
+
+        B1Ku+LBfTUGTIw+IL/iWKTroAv0CrMrzEGGeKTR6p1QBWpIWoWIZ7TOPHnKRbTfC
+
+        NndZh9OmISt7Vp+q1of5Bpf7bM0aW7vDdcepnjUjM3rPTo8AgOmaW0k=
+
+        -----END RSA PRIVATE KEY-----
+
+'
+      cert: ! '-----BEGIN CERTIFICATE-----
+
+        MIIC9TCCAd2gAwIBAgIBADANBgkqhkiG9w0BAQUFADA+MQswCQYDVQQGEwJVUzEQ
+
+        MA4GA1UECgwHUGl2b3RhbDEdMBsGA1UEAwwUKi5ib3NoLXBtLmNmLWFwcC5jb20w
+
+        HhcNMTQwMTMwMDEzNDE3WhcNMTcwMTMwMDEzNDE3WjA+MQswCQYDVQQGEwJVUzEQ
+
+        MA4GA1UECgwHUGl2b3RhbDEdMBsGA1UEAwwUKi5ib3NoLXBtLmNmLWFwcC5jb20w
+
+        ggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCe0AhrGMgFAOBfasltdsl1
+
+        6txqWCwAOj4QhaBc9FeYWJqsqEALyxlprVeBO6ikSRmWaQYUQYrkP8SfRd1DyxYJ
+
+        u5t576Tu2owyk8L3oMcl1KBElpf0GJyKi4aww5940lNRhOa5dxcrIS8a1jgFPx8o
+
+        9/pw2GgTrp0tlRtVSF485hxqWrdVRV0F4QozwVHDkz/dQwvWs/LNfTUvNGbJbch3
+
+        8eShY5XcJCNR/t0CFlxj6eq56OHx5BqLLqieEze5WJb0sHP09AaG2+ngYJTrFMGG
+
+        17lENh1yPv6dm0yAzKqH/e+YLuDRa3tppUCQAITWIkAuMKEFk/MIfy1gpbzPYpk9
+
+        AgMBAAEwDQYJKoZIhvcNAQEFBQADggEBAB+6WP/Y5KOD0KCPFcqo4J9dqhQWwGas
+
+        kCe5RqG0IFO52WieBWG0lW5ifqo00ogtsyDyQv4ERL6vp2zHF7bQ73e+Rbs2kLOl
+
+        VuxjOksPRskWIdVczklTIkA21oeRGbyxXuspGyMapLExWeoZ5EOJiNf3czRRevMU
+
+        TE58zrOu0vdINBNwtlcKQYIejlaanSEtTOQxZN+qM42N6TVrzzFYHuY5bFvTe2gq
+
+        dh9YKObL6YTjj9c2QRIMVBcijFu08mq43fGZ/gBX0XAFF9YGmI2y15iV8H1fCmDA
+
+        tSeSIGa/A6jmRG1XXH0U2LCClgQ7nIe3BR4P6T/4zVPMZ1Ke0Cv4/Mo=
+
+        -----END CERTIFICATE-----
+
+'
+  hm:
+    http:
+      port: 25923
+      user: admin
+      password: admin
+    director_account:
+      user: hm
+      password: yhac8JRLGUDE0V3vYRqnZA==
+    intervals:
+      poll_director: 60
+      poll_grace_period: 30
+      log_stats: 300
+      analyze_agents: 60
+      agent_timeout: 180
+      rogue_agent_alert: 180
+    loglevel: info
+    email_notifications: false
+    tsdb_enabled: false
+    cloud_watch_enabled: true
+    resurrector_enabled: true
+  registry:
+    address: 10.10.0.7
+    db: *bosh_db
+    http:
+      port: 25777
+      user: awsreg
+      password: awsreg
+  aws:
+    access_key_id: AKIAJHISGX6GWNJ4THWA
+    secret_access_key: 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
+    region: us-east-1
+    default_key_name: bosh
+    ec2_endpoint: ec2.us-east-1.amazonaws.com
+    default_security_groups:
+    - bosh
+  dns:
+    address: 10.10.0.7
+    db: *bosh_db
+    recursor: 208.67.220.220

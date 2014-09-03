@@ -1,0 +1,59 @@
+---
+name: dummy_disk
+director_uuid: 02914d48-105d-4fa4-ad87-390b7cbae95a
+
+releases:
+- name: bosh
+  version: latest
+
+compilation:
+  reuse_compilation_vms: true
+  workers: 2
+  network: default
+  cloud_properties:
+    instance_type: c1.medium
+    availability_zone: us-east-1c
+
+update:
+  canaries: 1
+  canary_watch_time: 30000-240000
+  update_watch_time: 30000-600000
+  max_in_flight: 3
+
+resource_pools:
+- name: default
+  stemcell:
+    name: bosh-aws-xen-ubuntu-go_agent
+    version: latest
+  network: default
+  size: 1
+  cloud_properties:
+    instance_type: m1.small
+    availability_zone: us-east-1c
+
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 10.10.0.0/24
+    gateway: 10.10.0.1
+    reserved:
+    - 10.10.0.2 - 10.10.0.21
+    - 10.10.0.25 - 10.10.0.254
+    dns:
+    - 10.10.0.6
+    cloud_properties:
+      subnet: subnet-d597b993
+
+jobs:
+- name: blah
+  template: redis
+  instances: 1
+  resource_pool: default
+  persistent_disk: 1024
+  networks:
+  - name: default
+    default: [dns, gateway]
+  properties:
+    redis:
+      password: redis
