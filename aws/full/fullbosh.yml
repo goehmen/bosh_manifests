@@ -1,6 +1,6 @@
 ---
 name: bosh-pm-acceptance
-director_uuid: 13f4315d-7347-4f0b-8806-d1e96b74ac30
+director_uuid: d50deacf-28cc-4125-8d49-ffcccb88c6a2
 release:
   name: bosh
   version: latest
@@ -33,7 +33,7 @@ networks:
 resource_pools:
 - name: default
   stemcell:
-    name: bosh-aws-xen-ubuntu-lucid-go_agent
+    name: bosh-aws-xen-centos-go_agent
     version: latest
   network: default
   size: 1
@@ -93,12 +93,22 @@ properties:
   - 1.north-america.pool.ntp.org
   - 2.north-america.pool.ntp.org
   - 3.north-america.pool.ntp.org
-#  blobstore:
+  blobstore:
+#    provider: s3
+#    bucket_name: service-instance-43e041c0-f536-4feb-af1b-44c42807b32b
+#    access_key_id: DEZYYSZWXYCPE7TX25NQ
+#    secret_access_key: qpSf6DiQC9iyb2XmwALvDuEC07lv8wA3FHwcAw==
+#    s3_port: 80
+#    host: p-riakcs.throwback.pepsi.cf-app.com
+#    use_ssl: false
+#    ssl_verify_peer: false
+#    s3_force_path_style: true
+#  a diff blobstore:
 #    provider: s3
 #    bucket_name: bosh-pm-cf-app-com-bosh-blobstore
 #    access_key_id: AKIAJHISGX6GWNJ4THWA
 #    secret_access_key: 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
-  blobstore:
+#  3rd blobstore:
     address: 10.10.0.7
     port: 25251
     backend_port: 25552
@@ -108,6 +118,9 @@ properties:
     director:
       user: director
       password: DirectoR
+  agent:
+    blobstore:
+      use_ssl: false
   networks:
     apps: default
     management: default
